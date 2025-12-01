@@ -1,38 +1,42 @@
 <script>
   import { page } from '$app/stores';
   import { base } from '$app/paths';
-  
-  let filepath = [];
+
   let paths = {};
 
   $: {
     const pathname = $page.url.pathname;
 
-    // strip base from the front of the path if it's there
-    const withoutBase =
+    // STEP 1 — remove the base from pathname for breadcrumb logic
+    const relative =
       base && pathname.startsWith(base)
         ? pathname.slice(base.length)
-        : pathname || '/';
+        : pathname;
 
-    filepath = withoutBase.split('/').filter(Boolean);
-    paths = { '/': 'russell' };
+    // STEP 2 — break the remaining path into segments
+    const segments = relative.split('/').filter(Boolean);
+
+    // STEP 3 — build final absolute hrefs INCLUDING the base
+    paths = {};
+
+    // home breadcrumb (must always start with base in prod)
+    const homeHref = base || '/';
+    paths[homeHref] = 'russell';
 
     let current = '';
-    for (const part of filepath) {
+    for (const part of segments) {
       current += '/' + part;
-      paths[current] = part;
+      const fullHref = `${base}${current}`;
+      paths[fullHref] = part;
     }
   }
-
-  $: labels = Object.values(paths);
 </script>
 
 <header>
-  <!-- base IS needed for static assets -->
   <img src={`${base}/images/russimg.jpg`} id="user-pfp" />
 
-  {#each Object.entries(paths) as [key, value], i}
-    <a href={key} class="left-nav">{value}</a>
+  {#each Object.entries(paths) as [href, label], i}
+    <a href={href} class="left-nav">{label}</a>
     {#if i < Object.entries(paths).length - 1}
       <p>&nbsp;/</p>
     {/if}
